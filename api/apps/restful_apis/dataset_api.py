@@ -767,7 +767,7 @@ async def update_auto_metadata(tenant_id, dataset_id):
         return get_error_argument_result(err)
 
     try:
-        success, result = await dataset_api_service.update_auto_metadata(dataset_id, tenant_id, cfg)
+        success, result = await dataset_api_service.update_auto_metadata(dataset_id, tenant_id, request)
         if success:
             return get_result(data=result)
         else:
