@@ -39,8 +39,6 @@ from rag.utils.redis_conn import REDIS_CONN
 from rag.utils.s3_conn import RAGFlowS3
 from rag.utils.oss_conn import RAGFlowOSS
 
-from rag.nlp import search
-
 import memory.utils.es_conn as memory_es_conn
 import memory.utils.infinity_conn as memory_infinity_conn
 import memory.utils.ob_conn as memory_ob_conn
@@ -132,6 +130,7 @@ PARALLEL_DEVICES: int = 0
 
 STORAGE_IMPL_TYPE = os.getenv('STORAGE_IMPL', 'MINIO')
 STORAGE_IMPL = None
+_SETTINGS_INITIALIZED = False
 
 def get_svr_queue_name(priority: int) -> str:
     if priority == 0:
@@ -194,7 +193,11 @@ class StorageFactory:
         return cls.storage_mapping[storage]()
 
 
-def init_settings():
+def init_settings(force=False):
+    global _SETTINGS_INITIALIZED
+    if _SETTINGS_INITIALIZED and not force:
+        return
+
     global DATABASE_TYPE, DATABASE
     DATABASE_TYPE = os.getenv("DB_TYPE", "mysql")
     DATABASE = decrypt_database_config(name=DATABASE_TYPE)
@@ -358,6 +361,8 @@ def init_settings():
         STORAGE_IMPL = storage_impl
 
     global retriever, kg_retriever
+    from rag.nlp import search
+
     retriever = search.Dealer(docStoreConn)
     from rag.graphrag import search as kg_search
 
@@ -388,6 +393,7 @@ def init_settings():
     EMBEDDING_BATCH_SIZE = int(os.environ.get("EMBEDDING_BATCH_SIZE", 16))
 
     os.environ["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1"
+    _SETTINGS_INITIALIZED = True
 
 
 def check_and_install_torch():
@@ -433,4 +439,3 @@ def _resolve_per_model_config(entry_dict, backup_factory, backup_api_key, backup
 def print_rag_settings():
     logging.info(f"MAX_CONTENT_LENGTH: {DOC_MAXIMUM_SIZE}")
     logging.info(f"MAX_FILE_COUNT_PER_USER: {int(os.environ.get('MAX_FILE_NUM_PER_USER', 0))}")
-

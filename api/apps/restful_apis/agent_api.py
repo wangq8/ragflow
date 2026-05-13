@@ -63,7 +63,6 @@ from common import settings
 from common.constants import RetCode
 from common.misc_utils import get_uuid, thread_pool_exec
 from peewee import MySQLDatabase, PostgresqlDatabase
-from rag.flow.pipeline import Pipeline
 from rag.nlp import search
 from rag.utils.redis_conn import REDIS_CONN
 
@@ -941,6 +940,8 @@ async def agent_chat_completion(tenant_id, agent_id=None):
         dsl_str = json.dumps(replica_dsl, ensure_ascii=False)
 
         if cvs.canvas_category == CanvasCategory.DataFlow:
+            from rag.flow.pipeline import Pipeline
+
             task_id = get_uuid()
             Pipeline(
                 dsl_str,

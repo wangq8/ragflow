@@ -43,7 +43,6 @@ from common.constants import LLMType, ParserType, RetCode
 from common.misc_utils import thread_pool_exec
 from common.string_utils import is_content_empty, remove_redundant_spaces
 from common.tag_feature_utils import validate_tag_features
-from rag.app.qa import beAdoc, rmPrefix
 from rag.nlp import rag_tokenizer, search
 
 
@@ -412,6 +411,8 @@ async def update_chunk(tenant_id, dataset_id, document_id, chunk_id):
         model_config = get_model_config_by_type_and_name(dataset_tenant_id, LLMType.EMBEDDING.value, embd_id)
     embd_mdl = TenantLLMService.model_instance(model_config)
     if doc.parser_id == ParserType.QA:
+        from rag.app.qa import beAdoc, rmPrefix
+
         arr = [t for t in re.split(r"[\n\t]", d["content_with_weight"]) if len(t) > 1]
         if len(arr) != 2:
             return get_error_data_result(message="Q&A must be separated by TAB/ENTER key.")

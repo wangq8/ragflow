@@ -32,18 +32,7 @@ import threading
 import uuid
 import faulthandler
 
-from api.apps import app
-from api.db.runtime_config import RuntimeConfig
-from api.db.services.document_service import DocumentService
-from common.file_utils import get_project_base_directory
 from common import settings
-from api.db.db_models import init_database_tables as init_web_db
-from api.db.init_data import init_web_data, init_superuser
-from common.versions import get_ragflow_version
-from common.config_utils import show_configs
-from common.mcp_tool_call_conn import shutdown_all_mcp_sessions
-from common.log_utils import init_root_logger
-from agent.plugin import GlobalPluginManager
 from rag.utils.redis_conn import RedisDistributedLock
 
 stop_event = threading.Event()
@@ -51,6 +40,8 @@ stop_event = threading.Event()
 RAGFLOW_DEBUGPY_LISTEN = int(os.environ.get('RAGFLOW_DEBUGPY_LISTEN', "0"))
 
 def update_progress():
+    from api.db.services.document_service import DocumentService
+
     lock_value = str(uuid.uuid4())
     redis_lock = RedisDistributedLock("update_progress", lock_value=lock_value, timeout=60)
     logging.info(f"update_progress lock_value: {lock_value}")
@@ -69,6 +60,8 @@ def update_progress():
             stop_event.wait(6)
 
 def signal_handler(sig, frame):
+    from common.mcp_tool_call_conn import shutdown_all_mcp_sessions
+
     logging.info("Received interrupt signal, shutting down...")
     shutdown_all_mcp_sessions()
     stop_event.set()
@@ -76,6 +69,15 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 if __name__ == '__main__':
+    from agent.plugin import GlobalPluginManager
+    from api.db.db_models import init_database_tables as init_web_db
+    from api.db.init_data import init_web_data, init_superuser
+    from api.db.runtime_config import RuntimeConfig
+    from common.config_utils import show_configs
+    from common.file_utils import get_project_base_directory
+    from common.log_utils import init_root_logger
+    from common.versions import get_ragflow_version
+
     faulthandler.enable()
     init_root_logger("ragflow_server")
     logging.info(r"""
@@ -132,6 +134,8 @@ if __name__ == '__main__':
     RuntimeConfig.init_config(JOB_SERVER_HOST=settings.HOST_IP, HTTP_PORT=settings.HOST_PORT)
 
     GlobalPluginManager.load_plugins()
+
+    from api.apps import app
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)

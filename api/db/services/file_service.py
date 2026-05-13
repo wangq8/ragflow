@@ -40,7 +40,6 @@ from common.constants import TaskStatus, FileSource, ParserType, MAXIMUM_PAGE_NU
 from api.db.services.knowledgebase_service import KnowledgebaseService
 from api.db.services.task_service import TaskService
 from api.utils.file_utils import filename_type, read_potential_broken_pdf, thumbnail_img, sanitize_path
-from rag.llm.cv_model import GptV4
 from common import settings
 
 
@@ -585,6 +584,8 @@ class FileService(CommonService):
         kwargs = {"lang": "English", "callback": dummy, "parser_config": parser_config, "from_page": 0, "to_page": MAXIMUM_PAGE_NUMBER, "tenant_id": current_user.id if current_user else tenant_id}
         file_type = filename_type(filename)
         if img_base64 and file_type == FileType.VISUAL.value:
+            from rag.llm.cv_model import GptV4
+
             return GptV4.image2base64(blob)
         cks = FACTORY.get(FileService.get_parser(filename_type(filename), filename, ""), naive).chunk(filename, blob, **kwargs)
         return f"\n -----------------\nFile: {filename}\nContent as following: \n" + "\n".join([ck["content_with_weight"] for ck in cks])
