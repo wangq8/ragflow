@@ -410,11 +410,6 @@ func (h *DifyRetrievalHandler) Retrieval(c *gin.Context) {
 	}
 
 	// Build response
-	outputFilter, err := compliance.NewOutputFilter(ctx)
-	if err != nil {
-		common.Respond(c, http.StatusInternalServerError, common.CodeServerError, nil, err.Error())
-		return
-	}
 	records := make([]difyRecord, 0, len(chunks))
 	for _, ch := range chunks {
 		docID, _ := ch["doc_id"].(string)
@@ -441,13 +436,17 @@ func (h *DifyRetrievalHandler) Retrieval(c *gin.Context) {
 		content, _ := ch["content_with_weight"].(string)
 
 		records = append(records, difyRecord{
-			Content:  outputFilter.Filter(content),
+			Content:  content,
 			Score:    score,
-			Title:    outputFilter.Filter(title),
+			Title:    title,
 			Metadata: meta,
 		})
 	}
 
+	if err := filterDifyRecords(ctx, records); err != nil {
+		common.Respond(c, http.StatusInternalServerError, common.CodeServerError, nil, err.Error())
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"records": records})
 }
 

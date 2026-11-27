@@ -326,10 +326,9 @@ func (s *ChatPipelineService) AsyncChat(
 	stream bool,
 	kwargs map[string]interface{},
 ) (results <-chan AsyncChatResult, runErr error) {
-	var outputFilter *compliance.TextFilter
 	defer func() {
 		if runErr == nil && results != nil {
-			results = s.filterChatOutput(ctx, chat, stream, results, outputFilter)
+			results = s.filterChatOutput(ctx, chat, stream, results)
 			results = logChatCompletion(ctx, chat, messages, stream, results)
 		}
 	}()
@@ -356,7 +355,7 @@ func (s *ChatPipelineService) AsyncChat(
 	if err != nil {
 		return nil, err
 	}
-	outputFilter, err = compliance.NewOutputFilter(ctx)
+	ctx, err = compliance.WithOutputFilter(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
 			out := make(chan AsyncChatResult)
@@ -365,7 +364,6 @@ func (s *ChatPipelineService) AsyncChat(
 		}
 		return nil, err
 	}
-	ctx = compliance.WithTextFilter(ctx, outputFilter)
 	if err := compliance.ValidateQuestion(ctx, question); err != nil {
 		if ctx.Err() != nil {
 			out := make(chan AsyncChatResult)
@@ -2819,7 +2817,7 @@ func stripTTSTags(text string) string {
 func (s *ChatPipelineService) synthesizeTTS(ctx context.Context, ttsModel *modelModule.TTSModel, text string) interface{} {
 	// Filtered turns synthesize the sanitized final answer in filterChatOutput;
 	// per-delta synthesis could speak a word before its remaining chunks arrive.
-	if compliance.TextFilterFromContext(ctx).Enabled() {
+	if compliance.OutputFilterEnabled(ctx) {
 		return nil
 	}
 	if ttsModel == nil || text == "" {

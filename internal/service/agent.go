@@ -2334,13 +2334,9 @@ func (s *AgentService) buildRunFunc(canvasID string, versionRow *entity.UserCanv
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		outputFilter, err := compliance.NewOutputFilter(ctx)
+		ctx, err := prepareAgentOutput(ctx)
 		if err != nil {
 			return nil, err
-		}
-		ctx = compliance.WithTextFilter(ctx, outputFilter)
-		if outputFilter.Enabled() {
-			ctx = canvas.WithEventFilter(ctx, newAgentOutputFilter(outputFilter))
 		}
 		if err := component.ValidateDynamicEntries(dsl); err != nil {
 			return nil, runtime.NewUserFacingError(err.Error())
@@ -2961,12 +2957,7 @@ func (s *AgentService) persistAgentRunSession(
 	if sessionID == "" || s == nil || s.api4ConversationDAO == nil || dao.DB == nil {
 		return nil
 	}
-	outputFilter := compliance.TextFilterFromContext(ctx)
-	answer = outputFilter.Filter(answer)
-	thinking = outputFilter.Filter(thinking)
-	if reference != nil {
-		reference = outputFilter.FilterFields(reference).(map[string]interface{})
-	}
+	answer, thinking, reference = filterAgentOutput(ctx, answer, thinking, reference)
 	userID := agentSessionHistoryUserID(ctx, agentID, sessionID)
 	history := dao.ConversationHistoryUpdate{}
 	if stringifyAgentUserInput(agentRunQuery(userInput)) != "" {

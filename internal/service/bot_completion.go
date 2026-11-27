@@ -331,12 +331,10 @@ func (s *BotService) ChatbotCompletion(
 		// the share page calls this endpoint once with an empty
 		// question to obtain a session_id, then sends the real
 		// questions with that session_id.
-		prologue := stringFromMap(dialog.PromptConfig, "prologue")
-		outputFilter, err := compliance.NewOutputFilter(ctx)
+		prologue, err := compliance.FilterOutput(ctx, stringFromMap(dialog.PromptConfig, "prologue"))
 		if err != nil {
 			return nil, common.CodeServerError, err
 		}
-		prologue = outputFilter.Filter(prologue)
 		seedMsg, _ := json.Marshal([]map[string]any{
 			{
 				"role":       "assistant",

@@ -254,9 +254,8 @@ func (m *MessageComponent) Invoke(ctx context.Context, db *gorm.DB, inputs map[s
 		"content":   rendered,
 		"downloads": downloads,
 	}
-	outputFilter := compliance.TextFilterFromContext(ctx)
-	safeResolved := outputFilter.Filter(resolved)
-	safeRendered := outputFilter.Filter(rendered)
+	safeResolved := compliance.FilterText(ctx, resolved)
+	safeRendered := compliance.FilterText(ctx, rendered)
 
 	// File export (the "Download file type" selector). Python's
 	// _convert_content receives the resolved, un-rendered content and
