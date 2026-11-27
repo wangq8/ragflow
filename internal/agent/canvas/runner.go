@@ -450,13 +450,22 @@ func PushEvent(ctx context.Context, ch chan<- RunEvent, ev RunEvent) {
 		return
 	}
 	defer func() { _ = recover() }()
+	events := []RunEvent{ev}
+	if filter, _ := ctx.Value(eventFilterKey{}).(*eventFilter); filter != nil {
+		filter.mu.Lock()
+		defer filter.mu.Unlock()
+		events = filter.apply(ev)
+	}
 	eventCtx := getEventContext(ctx)
 	if eventCtx.Err() != nil {
 		return
 	}
-	select {
-	case ch <- ev:
-	case <-eventCtx.Done():
+	for _, event := range events {
+		select {
+		case ch <- event:
+		case <-eventCtx.Done():
+			return
+		}
 	}
 }
 
